@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Movie Detail — CineBook</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+<nav class="navbar">
+  <a href="/" class="logo">Cine<span>Book</span></a>
+  <div class="nav-links" id="nav-links"></div>
+</nav>
+
+<div class="container">
+  <div id="movieDetail"><div class="spinner"></div></div>
+</div>
+
+<script src="/js/api.js"></script>
+<script src="/js/auth.js"></script>
+<script>
+  const params  = new URLSearchParams(window.location.search);
+  const movieId = params.get('id');
+
+  if (!movieId) window.location.href = '/';
+
+  let allShows   = [];
+  let selectedDate = null;
+
+  async function loadMovie() {
+    const el = document.getElementById('movieDetail');
+    try {
+      const movie = await api.get(`/movies/${movieId}`);
+      document.title = `${movie.title} — CineBook`;
+
+      el.innerHTML = `
+        <div class="movie-detail-hero">
+          <img src="${movie.poster_url || 'https://via.placeholder.com/300x450/1a1a2e/eaeaea?text=No+Poster'}"
+               alt="${movie.title}"
+               onerror="this.src='https://via.placeholder.com/300x450/1a1a2e/eaeaea?text=No+Poster'">
+          <div class="movie-info">
+            <h1>${movie.title}</h1>
+            <div class="rating">⭐ ${movie.rating || 'N/A'}</div>
+            <div class="meta-row">
+              ${movie.genre ? `<span class="badge">${movie.genre}</span>` : ''}
+              <span class="badge">${movie.language || 'English'}</span>
+              <span class="badge">${movie.duration} min</span>
+              ${movie.release_date ? `<span class="badge">${new Date(movie.release_date).getFullYear()}</span>` : ''}
+            </div>
+            <p class="description">${movie.description || 'No description available.'}</p>
+          </div>
+        </div>
+
+        <h2>Showtimes</h2>
+        <div id="datePills" class="date-pills mt-2"></div>
+        <div id="showsList" class="shows-list"><div class="spinner"></div></div>
+      `;
+
+      await loadShows();
+    } catch (err) {
+      el.innerHTML = `<div class="alert alert-error">${err.message}</div>`;
+    }
+  }
+
+  async function loadShows() {
+    try {
+      allShows = await api.get(`/movies/${movieId}/shows`);
+
+      // Get unique dates
+      const dates = [...new Set(allShows.map(s => s.show_date.split('T')[0]))];
+      selectedDate = dates[0] || null;
+
+      const pills = document.getElementById('datePills');
+      pills.innerHTML = dates.map(d => {
+        const label = new Date(d + 'T00:00:00').toLocaleDateString('en-IN', { weekday: 'short', month: 'short', day: 'numeric' });
+        return `<span class="date-pill ${d === selectedDate ? 'active' : ''}" onclick="filterByDate('${d}', this)">${label}</span>`;
+      }).join('');
+
+      renderShows();
+    } catch (err) {
+      document.getElementById('showsList').innerHTML = `<div class="alert alert-error">${err.message}</div>`;
+    }
+  }
+
+  function filterByDate(date, el) {
+    selectedDate = date;
+    document.querySelectorAll('.date-pill').forEach(p => p.classList.remove('active'));
+    el.classList.add('active');
+    renderShows();
+  }
+
+  function renderShows() {
+    const list = document.getElementById('showsList');
+    const filtered = selectedDate
+      ? allShows.filter(s => s.show_date.split('T')[0] === selectedDate)
+      : allShows;
+
+    if (filtered.length === 0) {
+      list.innerHTML = '<p class="text-muted">No shows available for this date.</p>';
+      return;
+    }
+
+    // Group by theater
+    const byTheater = {};
+    filtered.forEach(s => {
+      const key = s.theater_name;
+      if (!byTheater[key]) byTheater[key] = { location: s.theater_location, shows: [] };
+      byTheater[key].shows.push(s);
+    });
+
+    list.innerHTML = Object.entries(byTheater).map(([theater, data]) => `
+      <div class="card mb-2" style="padding:1rem">
+        <div style="margin-bottom:0.8rem">
+          <strong>${theater}</strong>
+          <span class="text-muted" style="font-size:0.85rem;margin-left:0.5rem">${data.location}</span>
+        </div>
+        <div style="display:flex;gap:0.6rem;flex-wrap:wrap">
+          ${data.shows.map(s => `
+            <a href="/seats.html?show=${s.show_id}" style="text-decoration:none">
+              <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:0.5rem 1rem;text-align:center;cursor:pointer;transition:all 0.2s"
+                   onmouseover="this.style.borderColor='var(--accent)'"
+                   onmouseout="this.style.borderColor='var(--border)'">
+                <div style="font-weight:700">${s.show_time.slice(0,5)}</div>
+                <div style="font-size:0.75rem;color:var(--text-muted)">${s.screen_name}</div>
+                <div style="font-size:0.8rem;color:var(--accent)">₹${s.price}</div>
+                <div style="font-size:0.7rem;color:${s.available_seats < 10 ? 'var(--accent)' : 'var(--success)'}">
+                  ${s.available_seats} left
+                </div>
+              </div>
+            </a>
+          `).join('')}
+        </div>
+      </div>
+    `).join('');
+  }
+
+  loadMovie();
+</script>
+</body>
+</html>

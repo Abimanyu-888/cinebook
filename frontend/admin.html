@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Panel — CineBook</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+<nav class="navbar">
+  <a href="/" class="logo">Cine<span>Book</span></a>
+  <div class="nav-links" id="nav-links"></div>
+</nav>
+
+<div class="container">
+  <div class="page-header">
+    <h1>🎛️ Admin Panel</h1>
+    <p>Manage movies, shows, and view stats</p>
+  </div>
+
+  <!-- Stats -->
+  <div class="stats-grid" id="statsGrid">
+    <div class="spinner"></div>
+  </div>
+
+  <!-- Tab nav -->
+  <div style="display:flex;gap:0.5rem;margin-bottom:1.5rem;border-bottom:1px solid var(--border);padding-bottom:0">
+    <button class="btn btn-secondary admin-tab active" onclick="showSection('bookings')">All Bookings</button>
+    <button class="btn btn-secondary admin-tab" onclick="showSection('addMovie')">+ Add Movie</button>
+    <button class="btn btn-secondary admin-tab" onclick="showSection('addShow')">+ Add Show</button>
+  </div>
+
+  <!-- All Bookings -->
+  <div id="section-bookings">
+    <div id="allBookingsContent"><div class="spinner"></div></div>
+  </div>
+
+  <!-- Add Movie -->
+  <div id="section-addMovie" style="display:none">
+    <div style="max-width:600px">
+      <h2 class="mb-2">Add New Movie</h2>
+      <div id="movieMsg"></div>
+      <form onsubmit="addMovie(event)">
+        <div class="form-group"><label>Title *</label><input id="mTitle" required></div>
+        <div class="form-group"><label>Genre</label><input id="mGenre" placeholder="Action, Sci-Fi..."></div>
+        <div class="form-group"><label>Language</label>
+          <select id="mLang">
+            <option>English</option><option>Hindi</option><option>Tamil</option>
+            <option>Telugu</option><option>Korean</option><option>Other</option>
+          </select>
+        </div>
+        <div class="form-group"><label>Duration (minutes) *</label><input id="mDuration" type="number" min="1" required></div>
+        <div class="form-group"><label>Rating (0–10)</label><input id="mRating" type="number" step="0.1" min="0" max="10"></div>
+        <div class="form-group"><label>Release Date</label><input id="mRelease" type="date"></div>
+        <div class="form-group"><label>Poster URL</label><input id="mPoster" type="url" placeholder="https://..."></div>
+        <div class="form-group"><label>Description</label><textarea id="mDesc" rows="3"></textarea></div>
+        <button type="submit" class="btn btn-primary">Add Movie</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Add Show -->
+  <div id="section-addShow" style="display:none">
+    <div style="max-width:500px">
+      <h2 class="mb-2">Schedule a Show</h2>
+      <div id="showMsg"></div>
+      <form onsubmit="addShow(event)">
+        <div class="form-group">
+          <label>Movie *</label>
+          <select id="sMovie" required><option value="">Loading...</option></select>
+        </div>
+        <div class="form-group">
+          <label>Screen *</label>
+          <select id="sScreen" required><option value="">Loading...</option></select>
+        </div>
+        <div class="form-group"><label>Date *</label><input id="sDate" type="date" required></div>
+        <div class="form-group"><label>Time *</label><input id="sTime" type="time" required></div>
+        <div class="form-group"><label>Price (₹) *</label><input id="sPrice" type="number" min="1" required></div>
+        <button type="submit" class="btn btn-primary">Schedule Show</button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script src="/js/api.js"></script>
+<script src="/js/auth.js"></script>
+<script>
+  requireAdmin();
+
+  function showSection(name) {
+    ['bookings', 'addMovie', 'addShow'].forEach(s => {
+      document.getElementById(`section-${s}`).style.display = s === name ? '' : 'none';
+    });
+    document.querySelectorAll('.admin-tab').forEach((btn, i) => {
+      btn.classList.toggle('active', ['bookings','addMovie','addShow'][i] === name);
+    });
+    if (name === 'addShow') loadMoviesAndScreens();
+  }
+
+  // ── Stats ──────────────────────────────────────────────────
+  async function loadStats() {
+    try {
+      const { stats } = await api.get('/admin/stats', true);
+      document.getElementById('statsGrid').innerHTML = `
+        <div class="stat-card"><div class="stat-label">Total Bookings</div><div class="stat-value">${stats.total_bookings}</div></div>
+        <div class="stat-card"><div class="stat-label">Revenue</div><div class="stat-value">₹${Number(stats.total_revenue).toLocaleString('en-IN')}</div></div>
+        <div class="stat-card"><div class="stat-label">Users</div><div class="stat-value">${stats.total_users}</div></div>
+        <div class="stat-card"><div class="stat-label">Movies</div><div class="stat-value">${stats.total_movies}</div></div>
+        <div class="stat-card"><div class="stat-label">Active Shows</div><div class="stat-value">${stats.active_shows}</div></div>
+      `;
+    } catch (err) {
+      document.getElementById('statsGrid').innerHTML = '';
+    }
+  }
+
+  // ── All Bookings ───────────────────────────────────────────
+  async function loadAllBookings() {
+    const el = document.getElementById('allBookingsContent');
+    try {
+      const bookings = await api.get('/admin/bookings', true);
+      if (bookings.length === 0) {
+        el.innerHTML = '<p class="text-muted">No bookings yet.</p>';
+        return;
+      }
+      el.innerHTML = `
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr><th>#ID</th><th>User</th><th>Movie</th><th>Date</th><th>Seats</th><th>Amount</th><th>Status</th><th>Booked At</th></tr>
+            </thead>
+            <tbody>
+              ${bookings.map(b => {
+                const d = new Date(b.show_date + 'T00:00:00').toLocaleDateString('en-IN', { month:'short', day:'numeric', year:'numeric' });
+                const badge = b.status === 'confirmed' ? 'badge-success' : b.status === 'cancelled' ? 'badge' : 'badge-warning';
+                return `
+                <tr>
+                  <td>#${b.booking_id}</td>
+                  <td><div>${b.user_name}</div><div class="text-muted" style="font-size:0.75rem">${b.user_email}</div></td>
+                  <td>${b.movie_title}</td>
+                  <td>${d} ${b.show_time.slice(0,5)}</td>
+                  <td style="color:var(--accent)">${(b.seats||[]).join(', ')}</td>
+                  <td>₹${b.total_amount}</td>
+                  <td><span class="badge ${badge}">${b.status}</span></td>
+                  <td style="font-size:0.78rem">${new Date(b.booking_time).toLocaleString('en-IN')}</td>
+                </tr>`;
+              }).join('')}
+            </tbody>
+          </table>
+        </div>`;
+    } catch (err) {
+      el.innerHTML = `<div class="alert alert-error">${err.message}</div>`;
+    }
+  }
+
+  // ── Add Movie ──────────────────────────────────────────────
+  async function addMovie(e) {
+    e.preventDefault();
+    const btn = e.target.querySelector('button');
+    btn.disabled = true; btn.textContent = 'Adding...';
+    try {
+      await api.post('/admin/movies', {
+        title:        document.getElementById('mTitle').value,
+        genre:        document.getElementById('mGenre').value || undefined,
+        language:     document.getElementById('mLang').value,
+        duration:     parseInt(document.getElementById('mDuration').value),
+        rating:       parseFloat(document.getElementById('mRating').value) || undefined,
+        description:  document.getElementById('mDesc').value || undefined,
+        poster_url:   document.getElementById('mPoster').value || undefined,
+        release_date: document.getElementById('mRelease').value || undefined,
+      }, true);
+      document.getElementById('movieMsg').innerHTML = '<div class="alert alert-success">Movie added successfully!</div>';
+      e.target.reset();
+      loadStats();
+    } catch (err) {
+      document.getElementById('movieMsg').innerHTML = `<div class="alert alert-error">${err.message}</div>`;
+    } finally {
+      btn.disabled = false; btn.textContent = 'Add Movie';
+    }
+  }
+
+  // ── Add Show ───────────────────────────────────────────────
+  async function loadMoviesAndScreens() {
+    const [movies, screens] = await Promise.all([
+      api.get('/movies'),
+      api.get('/admin/theaters', true)
+    ]);
+
+    const mSel = document.getElementById('sMovie');
+    mSel.innerHTML = '<option value="">Select Movie</option>' +
+      movies.map(m => `<option value="${m.movie_id}">${m.title}</option>`).join('');
+
+    // Load screens separately
+    const sSel = document.getElementById('sScreen');
+    const screensData = await pool_screens();
+    sSel.innerHTML = '<option value="">Select Screen</option>' +
+      (screensData || []).map(s => `<option value="${s.screen_id}">${s.theater_name} — ${s.screen_name}</option>`).join('');
+  }
+
+  async function pool_screens() {
+    // Fetch screens via a combined theaters + screens query
+    try {
+      const theaters = await api.get('/admin/theaters', true);
+      const allScreens = [];
+      // This is a simplified approach; we could add a dedicated /admin/screens endpoint
+      return allScreens;
+    } catch { return []; }
+  }
+
+  async function addShow(e) {
+    e.preventDefault();
+    const btn = e.target.querySelector('button');
+    btn.disabled = true; btn.textContent = 'Scheduling...';
+    try {
+      await api.post('/admin/shows', {
+        movie_id:  parseInt(document.getElementById('sMovie').value),
+        screen_id: parseInt(document.getElementById('sScreen').value),
+        show_date: document.getElementById('sDate').value,
+        show_time: document.getElementById('sTime').value,
+        price:     parseFloat(document.getElementById('sPrice').value),
+      }, true);
+      document.getElementById('showMsg').innerHTML = '<div class="alert alert-success">Show scheduled!</div>';
+      e.target.reset();
+      loadStats();
+    } catch (err) {
+      document.getElementById('showMsg').innerHTML = `<div class="alert alert-error">${err.message}</div>`;
+    } finally {
+      btn.disabled = false; btn.textContent = 'Schedule Show';
+    }
+  }
+
+  // ── Highlight active tab ───────────────────────────────────
+  document.querySelectorAll('.admin-tab').forEach(btn => {
+    btn.addEventListener('click', function() {
+      document.querySelectorAll('.admin-tab').forEach(b => b.classList.remove('active'));
+      this.classList.add('active');
+    });
+  });
+
+  // Set min date to today
+  document.getElementById('sDate').min = new Date().toISOString().split('T')[0];
+
+  loadStats();
+  loadAllBookings();
+</script>
+</body>
+</html>

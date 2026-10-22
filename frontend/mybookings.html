@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Bookings — CineBook</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+<nav class="navbar">
+  <a href="/" class="logo">Cine<span>Book</span></a>
+  <div class="nav-links" id="nav-links"></div>
+</nav>
+
+<div class="container">
+  <div class="page-header flex-between">
+    <div>
+      <h1>My Bookings</h1>
+      <p>Your ticket history</p>
+    </div>
+  </div>
+
+  <div id="bookingsContent"><div class="spinner"></div></div>
+</div>
+
+<script src="/js/api.js"></script>
+<script src="/js/auth.js"></script>
+<script>
+  requireAuth();
+
+  async function loadBookings() {
+    const el = document.getElementById('bookingsContent');
+    try {
+      const bookings = await api.get('/bookings/my', true);
+
+      if (bookings.length === 0) {
+        el.innerHTML = `
+          <div class="text-center" style="padding:3rem">
+            <div style="font-size:3rem;margin-bottom:1rem">🎬</div>
+            <p class="text-muted">No bookings yet.</p>
+            <a href="/" class="btn btn-primary mt-2">Browse Movies</a>
+          </div>`;
+        return;
+      }
+
+      el.innerHTML = `
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>#ID</th>
+                <th>Movie</th>
+                <th>Theater</th>
+                <th>Date & Time</th>
+                <th>Seats</th>
+                <th>Amount</th>
+                <th>Status</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${bookings.map(b => {
+                const showDate = new Date(b.show_date + 'T00:00:00').toLocaleDateString('en-IN', {
+                  month: 'short', day: 'numeric', year: 'numeric'
+                });
+                const isPast = new Date(b.show_date + 'T' + b.show_time) < new Date();
+                const statusBadge = b.status === 'confirmed'
+                  ? 'badge-success' : b.status === 'cancelled' ? 'badge' : 'badge-warning';
+
+                return `
+                <tr>
+                  <td><strong>#${b.booking_id}</strong></td>
+                  <td>${b.movie_title}</td>
+                  <td>
+                    <div>${b.theater_name}</div>
+                    <div class="text-muted" style="font-size:0.78rem">${b.screen_name}</div>
+                  </td>
+                  <td>
+                    <div>${showDate}</div>
+                    <div class="text-muted" style="font-size:0.78rem">${b.show_time.slice(0,5)}</div>
+                  </td>
+                  <td style="color:var(--accent);font-weight:600">${(b.seats || []).join(', ')}</td>
+                  <td><strong>₹${b.total_amount}</strong></td>
+                  <td><span class="badge ${statusBadge}">${b.status}</span></td>
+                  <td>
+                    ${(!isPast && b.status === 'confirmed')
+                      ? `<button class="btn btn-danger btn-sm" onclick="cancelBooking(${b.booking_id}, this)">Cancel</button>`
+                      : '<span class="text-muted" style="font-size:0.8rem">—</span>'
+                    }
+                  </td>
+                </tr>`;
+              }).join('')}
+            </tbody>
+          </table>
+        </div>`;
+    } catch (err) {
+      el.innerHTML = `<div class="alert alert-error">${err.message}</div>`;
+    }
+  }
+
+  async function cancelBooking(bookingId, btn) {
+    if (!confirm('Are you sure you want to cancel this booking?')) return;
+    btn.disabled = true;
+    btn.textContent = '...';
+    try {
+      await api.delete(`/bookings/${bookingId}`, true);
+      loadBookings();
+    } catch (err) {
+      alert(err.message);
+      btn.disabled = false;
+      btn.textContent = 'Cancel';
+    }
+  }
+
+  loadBookings();
+</script>
+</body>
+</html>

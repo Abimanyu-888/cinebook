@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Booking Confirmed — CineBook</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+<nav class="navbar">
+  <a href="/" class="logo">Cine<span>Book</span></a>
+  <div class="nav-links" id="nav-links"></div>
+</nav>
+
+<div class="container">
+  <div id="confirmPage"><div class="spinner"></div></div>
+</div>
+
+<script src="/js/api.js"></script>
+<script src="/js/auth.js"></script>
+<script>
+  const params    = new URLSearchParams(window.location.search);
+  const bookingId = params.get('booking');
+  if (!bookingId) window.location.href = '/';
+
+  async function loadConfirmation() {
+    const el = document.getElementById('confirmPage');
+    try {
+      const b = await api.get(`/bookings/${bookingId}`, true);
+
+      const showDate = new Date(b.show_date + 'T00:00:00').toLocaleDateString('en-IN', {
+        weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+      });
+      const bookedAt = new Date(b.booking_time).toLocaleString('en-IN');
+
+      el.innerHTML = `
+        <div class="confirm-card">
+          <div class="confirm-header">
+            <div class="checkmark">✅</div>
+            <h2 style="margin-top:0.5rem">Booking Confirmed!</h2>
+            <p style="opacity:0.85;font-size:0.9rem">Booking ID: #${b.booking_id}</p>
+          </div>
+          <div class="confirm-body">
+            <div class="confirm-row">
+              <span class="label">Movie</span>
+              <span><strong>${b.movie_title}</strong></span>
+            </div>
+            <div class="confirm-row">
+              <span class="label">Theater</span>
+              <span>${b.theater_name}</span>
+            </div>
+            <div class="confirm-row">
+              <span class="label">Location</span>
+              <span>${b.theater_location}</span>
+            </div>
+            <div class="confirm-row">
+              <span class="label">Screen</span>
+              <span>${b.screen_name}</span>
+            </div>
+            <div class="confirm-row">
+              <span class="label">Date & Time</span>
+              <span>${showDate} at ${b.show_time.slice(0,5)}</span>
+            </div>
+            <div class="confirm-row">
+              <span class="label">Seats</span>
+              <span style="color:var(--accent);font-weight:700">${(b.seats || []).join(', ')}</span>
+            </div>
+            <div class="confirm-row">
+              <span class="label">Payment</span>
+              <span style="text-transform:capitalize">${b.payment_method}</span>
+            </div>
+            <div class="confirm-row" style="font-size:1.1rem;font-weight:700">
+              <span class="label">Amount Paid</span>
+              <span style="color:var(--success)">₹${b.total_amount}</span>
+            </div>
+            <div class="confirm-row">
+              <span class="label">Booked At</span>
+              <span style="font-size:0.8rem">${bookedAt}</span>
+            </div>
+
+            <div style="display:flex;gap:1rem;margin-top:1.5rem">
+              <a href="/" class="btn btn-secondary" style="flex:1">🏠 Home</a>
+              <a href="/mybookings.html" class="btn btn-primary" style="flex:1">My Bookings</a>
+            </div>
+          </div>
+        </div>
+      `;
+    } catch (err) {
+      el.innerHTML = `<div class="alert alert-error">${err.message}</div>`;
+    }
+  }
+
+  loadConfirmation();
+</script>
+</body>
+</html>

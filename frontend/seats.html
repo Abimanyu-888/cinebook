@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Select Seats — CineBook</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+<nav class="navbar">
+  <a href="/" class="logo">Cine<span>Book</span></a>
+  <div class="nav-links" id="nav-links"></div>
+</nav>
+
+<div class="container">
+  <div id="seatPage"><div class="spinner"></div></div>
+</div>
+
+<script src="/js/api.js"></script>
+<script src="/js/auth.js"></script>
+<script>
+  const params = new URLSearchParams(window.location.search);
+  const showId = params.get('show');
+  if (!showId) window.location.href = '/';
+
+  let show         = null;
+  let selectedSeats = [];   // array of { seat_id, row_label, col_number, seat_type }
+
+  async function loadSeatPage() {
+    const el = document.getElementById('seatPage');
+    try {
+      [show] = await Promise.all([api.get(`/shows/${showId}`)]);
+      const seatData = await api.get(`/shows/${showId}/seats`);
+
+      document.title = `Select Seats — ${show.title}`;
+
+      const showDate = new Date(show.show_date + 'T00:00:00').toLocaleDateString('en-IN', {
+        weekday: 'short', month: 'short', day: 'numeric'
+      });
+
+      el.innerHTML = `
+        <!-- Show info banner -->
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1rem 1.5rem;margin-bottom:1.5rem;display:flex;gap:2rem;flex-wrap:wrap;align-items:center">
+          <div>
+            <div style="font-size:1.1rem;font-weight:700">${show.title}</div>
+            <div style="color:var(--text-muted);font-size:0.85rem">${show.theater_name} · ${show.screen_name}</div>
+          </div>
+          <div><span class="badge">${showDate}</span></div>
+          <div><span class="badge badge-accent">${show.show_time.slice(0,5)}</span></div>
+          <div style="margin-left:auto;font-size:1.1rem;color:var(--accent);font-weight:700">₹${show.price} / seat</div>
+        </div>
+
+        <div class="two-col">
+          <!-- Seat Map -->
+          <div>
+            <div class="seat-map-container">
+              <div class="screen-label">SCREEN</div>
+              <div id="seatGrid"></div>
+              <div class="seat-legend">
+                <div class="legend-item"><div class="legend-dot" style="background:#2a4a6e"></div> Standard</div>
+                <div class="legend-item"><div class="legend-dot" style="background:#4a2a6e"></div> Premium</div>
+                <div class="legend-item"><div class="legend-dot" style="background:#2a6e4a"></div> Recliner</div>
+                <div class="legend-item"><div class="legend-dot" style="background:#3a3a3a"></div> Booked</div>
+                <div class="legend-item"><div class="legend-dot" style="background:var(--accent)"></div> Selected</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Summary -->
+          <div>
+            <div class="booking-summary" id="summary">
+              <h3>Booking Summary</h3>
+              <div class="summary-row"><span>Movie</span><span>${show.title}</span></div>
+              <div class="summary-row"><span>Date</span><span>${showDate}</span></div>
+              <div class="summary-row"><span>Time</span><span>${show.show_time.slice(0,5)}</span></div>
+              <div class="summary-row"><span>Theater</span><span>${show.theater_name}</span></div>
+              <div class="summary-row" id="summarySeats"><span>Seats</span><span>None selected</span></div>
+              <div class="summary-row total" id="summaryTotal"><span>Total</span><span>₹0</span></div>
+
+              <div class="form-group mt-3">
+                <label>Payment Method</label>
+                <select id="paymentMethod">
+                  <option value="card">Credit / Debit Card</option>
+                  <option value="upi">UPI</option>
+                  <option value="netbanking">Net Banking</option>
+                  <option value="wallet">Wallet</option>
+                </select>
+              </div>
+
+              <div id="bookingMsg"></div>
+
+              <button class="btn btn-primary" style="width:100%;margin-top:0.5rem"
+                      id="bookBtn" onclick="confirmBooking()" disabled>
+                Confirm Booking
+              </button>
+            </div>
+          </div>
+        </div>
+      `;
+
+      renderSeatMap(seatData.seats);
+    } catch (err) {
+      el.innerHTML = `<div class="alert alert-error">${err.message}</div>`;
+    }
+  }
+
+  function renderSeatMap(rows) {
+    const grid = document.getElementById('seatGrid');
+    grid.innerHTML = Object.entries(rows).map(([rowLabel, seats]) => `
+      <div class="seat-row">
+        <div class="row-label">${rowLabel}</div>
+        ${seats.map(seat => `
+          <div class="seat ${seat.seat_type} ${seat.is_booked ? 'booked' : ''}"
+               id="seat-${seat.seat_id}"
+               title="${rowLabel}${seat.col_number} · ${seat.seat_type}"
+               onclick="${seat.is_booked ? '' : `toggleSeat(${seat.seat_id}, '${rowLabel}', ${seat.col_number}, '${seat.seat_type}')`}">
+          </div>
+        `).join('')}
+      </div>
+    `).join('');
+  }
+
+  function toggleSeat(seatId, rowLabel, colNumber, seatType) {
+    const el = document.getElementById(`seat-${seatId}`);
+    const idx = selectedSeats.findIndex(s => s.seat_id === seatId);
+
+    if (idx === -1) {
+      if (selectedSeats.length >= 8) {
+        showMsg('You can select up to 8 seats per booking.', 'error');
+        return;
+      }
+      selectedSeats.push({ seat_id: seatId, row_label: rowLabel, col_number: colNumber, seat_type: seatType });
+      el.classList.add('selected');
+    } else {
+      selectedSeats.splice(idx, 1);
+      el.classList.remove('selected');
+    }
+
+    updateSummary();
+  }
+
+  function updateSummary() {
+    const count = selectedSeats.length;
+    const total = count * parseFloat(show.price);
+    const seatLabels = selectedSeats.map(s => `${s.row_label}${s.col_number}`).join(', ') || 'None selected';
+
+    document.getElementById('summarySeats').innerHTML =
+      `<span>Seats (${count})</span><span>${seatLabels}</span>`;
+    document.getElementById('summaryTotal').innerHTML =
+      `<span>Total</span><span>₹${total.toFixed(2)}</span>`;
+    document.getElementById('bookBtn').disabled = count === 0;
+    document.getElementById('bookingMsg').innerHTML = '';
+  }
+
+  async function confirmBooking() {
+    if (!getToken()) {
+      // Save intended URL and redirect to login
+      localStorage.setItem('redirect_after_login', window.location.href);
+      window.location.href = '/auth.html';
+      return;
+    }
+
+    const btn = document.getElementById('bookBtn');
+    btn.disabled = true;
+    btn.textContent = 'Processing...';
+
+    try {
+      const result = await api.post('/bookings', {
+        show_id:        parseInt(showId),
+        seat_ids:       selectedSeats.map(s => s.seat_id),
+        payment_method: document.getElementById('paymentMethod').value
+      }, true);
+
+      // Redirect to confirmation page
+      window.location.href = `/confirm.html?booking=${result.booking_id}`;
+    } catch (err) {
+      showMsg(err.message, 'error');
+      btn.disabled = false;
+      btn.textContent = 'Confirm Booking';
+    }
+  }
+
+  function showMsg(msg, type) {
+    document.getElementById('bookingMsg').innerHTML =
+      `<div class="alert alert-${type}">${msg}</div>`;
+  }
+
+  loadSeatPage();
+</script>
+</body>
+</html>
