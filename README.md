@@ -18,10 +18,10 @@ The database comes pre-loaded with testing accounts:
 
 | Role | Email Address | Password | Permissions |
 |---|---|---|---|
-| **Admin** | `admin@movies.com` | `password123` | Full access to Admin Dashboard, metrics, catalog CRUD, screen generator, and show scheduler |
-| **Customer** | `alice@example.com` | `password123` | Can browse movies, view seat maps, book tickets, and cancel reservations |
-| **Customer** | `bob@example.com` | `password123` | Independent user account for testing concurrent seat reservation flows |
-| **Customer** | `carol@example.com` | `password123` | Additional user account |
+| **Admin** | `admin@movies.com` | `password` | Full access to Admin Dashboard, metrics, catalog CRUD, screen generator, and show scheduler |
+| **Customer** | `alice@example.com` | `password` | Can browse movies, view seat maps, book tickets, and cancel reservations |
+| **Customer** | `bob@example.com` | `password` | Independent user account for testing concurrent seat reservation flows |
+| **Customer** | `carol@example.com` | `password` | Additional user account |
 
 ---
 
