@@ -42,7 +42,39 @@ INSERT INTO movies (title, genre, language, duration, rating, description, poste
 
 ('Joker',              'Drama',           'English', 122, 8.4,
  'The origin story of one of DC''s most iconic villains, Arthur Fleck.',
- 'https://image.tmdb.org/t/p/w500/udDclJoHjfjb8Ekgsd4FDteOkCU.jpg', '2019-10-04');
+ 'https://image.tmdb.org/t/p/w500/udDclJoHjfjb8Ekgsd4FDteOkCU.jpg', '2019-10-04'),
+
+('Oppenheimer',        'Drama/Thriller',  'English', 180, 8.5,
+ 'The story of J. Robert Oppenheimer''s role in the development of the atomic bomb during World War II.',
+ 'https://image.tmdb.org/t/p/w500/8Gxv8gSFCU0XGDykEGv7zR1n2ua.jpg', '2023-07-21'),
+
+('Spider-Man: No Way Home', 'Action/Adventure', 'English', 148, 8.3,
+ 'Peter Parker seeks Doctor Strange''s help to restore his secret identity, unleashing the multiverse.',
+ 'https://image.tmdb.org/t/p/w500/1g0dhYtq4irTY1GPXvft6k4YLjm.jpg', '2021-12-17'),
+
+('Everything Everywhere All at Once', 'Sci-Fi/Comedy', 'English', 139, 7.8,
+ 'A middle-aged Chinese immigrant gets swept up in an adventure across multiple dimensions to save the universe.',
+ 'https://image.tmdb.org/t/p/w500/w3LxiVYdWWRvEVdn5RYq6jIqkb1.jpg', '2022-03-25'),
+
+('The Batman',         'Action/Crime',    'English', 176, 7.8,
+ 'Batman ventures into Gotham City''s underworld when a sadistic killer leaves behind a trail of cryptic clues.',
+ 'https://image.tmdb.org/t/p/w500/74xTEgt7R36Fpooo50r9T25onhq.jpg', '2022-03-04'),
+
+('Top Gun: Maverick',  'Action',          'English', 130, 8.2,
+ 'After thirty years of service, Pete Mitchell leads Top Gun''s elite graduates on a specialized mission.',
+ 'https://image.tmdb.org/t/p/w500/62HCnUTziyWQpDaBO2i1DX17ljH.jpg', '2022-05-27'),
+
+('Avatar: The Way of Water', 'Sci-Fi/Adventure', 'English', 192, 7.6,
+ 'Jake Sully lives with his family on Pandora, but when an old threat returns, they must fight to protect their home.',
+ 'https://image.tmdb.org/t/p/w500/t6HIqrRAclMCA60NsSmeqe9RmNV.jpg', '2022-12-16'),
+
+('John Wick: Chapter 4', 'Action/Thriller', 'English', 169, 7.7,
+ 'John Wick uncovers a path to defeating The High Table, facing new alliances and global enemies.',
+ 'https://image.tmdb.org/t/p/w500/vZloFAK7NmvMGKE7Q2ycnTIREGk.jpg', '2023-03-24'),
+
+('Barbie',             'Comedy/Fantasy',  'English', 114, 7.0,
+ 'Barbie and Ken have the time of their lives in Barbie Land, but a journey to the real world changes everything.',
+ 'https://image.tmdb.org/t/p/w500/iuFNMS8U5cb6xfzi51Dbkovj7vM.jpg', '2023-07-21');
 
 -- ============================================================
 -- THEATERS
@@ -133,32 +165,117 @@ FROM generate_series(1, 7) AS row_num
 CROSS JOIN generate_series(1, 10) AS col_num;
 
 -- ============================================================
--- SHOWS (today + next 3 days)
+-- SHOWS (spread across next ~60 days)
 -- ============================================================
 INSERT INTO shows (movie_id, screen_id, show_date, show_time, price, status) VALUES
 -- Inception
-(1, 1, CURRENT_DATE,       '10:00', 250.00, 'active'),
-(1, 1, CURRENT_DATE,       '14:00', 250.00, 'active'),
-(1, 1, CURRENT_DATE,       '18:00', 300.00, 'active'),
-(1, 3, CURRENT_DATE + 1,   '11:00', 280.00, 'active'),
-(1, 3, CURRENT_DATE + 1,   '16:00', 280.00, 'active'),
+(1, 1, CURRENT_DATE,        '10:00', 250.00, 'active'),
+(1, 1, CURRENT_DATE,        '14:00', 250.00, 'active'),
+(1, 1, CURRENT_DATE,        '18:00', 300.00, 'active'),
+(1, 3, CURRENT_DATE + 1,    '11:00', 280.00, 'active'),
+(1, 3, CURRENT_DATE + 1,    '16:00', 280.00, 'active'),
+(1, 2, CURRENT_DATE + 30,   '14:00', 220.00, 'active'),
+(1, 5, CURRENT_DATE + 60,   '16:00', 220.00, 'active'),
 -- The Dark Knight
-(2, 2, CURRENT_DATE,       '09:30', 220.00, 'active'),
-(2, 2, CURRENT_DATE,       '13:30', 220.00, 'active'),
-(2, 4, CURRENT_DATE + 1,   '17:00', 260.00, 'active'),
+(2, 2, CURRENT_DATE,        '09:30', 220.00, 'active'),
+(2, 2, CURRENT_DATE,        '13:30', 220.00, 'active'),
+(2, 4, CURRENT_DATE + 1,    '17:00', 260.00, 'active'),
+(2, 4, CURRENT_DATE + 24,   '11:00', 350.00, 'active'),
+(2, 4, CURRENT_DATE + 43,   '21:00', 300.00, 'active'),
+(2, 2, CURRENT_DATE + 60,   '09:30', 250.00, 'active'),
 -- Interstellar
-(3, 3, CURRENT_DATE,       '11:00', 270.00, 'active'),
-(3, 3, CURRENT_DATE,       '15:00', 270.00, 'active'),
-(3, 5, CURRENT_DATE + 2,   '14:00', 240.00, 'active'),
+(3, 3, CURRENT_DATE,        '11:00', 270.00, 'active'),
+(3, 3, CURRENT_DATE,        '15:00', 270.00, 'active'),
+(3, 5, CURRENT_DATE + 2,    '14:00', 240.00, 'active'),
+(3, 5, CURRENT_DATE + 22,   '15:00', 320.00, 'active'),
+(3, 2, CURRENT_DATE + 41,   '18:00', 240.00, 'active'),
+(3, 3, CURRENT_DATE + 58,   '17:00', 280.00, 'active'),
 -- Parasite
-(4, 4, CURRENT_DATE,       '12:00', 200.00, 'active'),
-(4, 5, CURRENT_DATE + 1,   '19:00', 220.00, 'active'),
+(4, 4, CURRENT_DATE,        '12:00', 200.00, 'active'),
+(4, 5, CURRENT_DATE + 1,    '19:00', 220.00, 'active'),
+(4, 1, CURRENT_DATE + 20,   '19:00', 300.00, 'active'),
+(4, 4, CURRENT_DATE + 34,   '13:00', 320.00, 'active'),
+(4, 5, CURRENT_DATE + 47,   '13:00', 320.00, 'active'),
+(4, 5, CURRENT_DATE + 59,   '09:30', 220.00, 'active'),
 -- Dune
-(5, 1, CURRENT_DATE + 1,   '10:30', 300.00, 'active'),
-(5, 3, CURRENT_DATE + 2,   '13:00', 320.00, 'active'),
+(5, 1, CURRENT_DATE + 1,    '10:30', 300.00, 'active'),
+(5, 3, CURRENT_DATE + 2,    '13:00', 320.00, 'active'),
+(5, 1, CURRENT_DATE + 19,   '19:00', 200.00, 'active'),
+(5, 4, CURRENT_DATE + 32,   '17:00', 350.00, 'active'),
+(5, 3, CURRENT_DATE + 45,   '18:00', 220.00, 'active'),
+(5, 2, CURRENT_DATE + 60,   '19:00', 260.00, 'active'),
 -- The Avengers
-(6, 2, CURRENT_DATE + 1,   '11:00', 230.00, 'active'),
-(6, 4, CURRENT_DATE + 2,   '16:00', 250.00, 'active'),
+(6, 2, CURRENT_DATE + 1,    '11:00', 230.00, 'active'),
+(6, 4, CURRENT_DATE + 2,    '16:00', 250.00, 'active'),
+(6, 3, CURRENT_DATE + 16,   '21:00', 350.00, 'active'),
+(6, 5, CURRENT_DATE + 30,   '17:00', 200.00, 'active'),
+(6, 2, CURRENT_DATE + 48,   '15:00', 280.00, 'active'),
+(6, 1, CURRENT_DATE + 60,   '16:00', 350.00, 'active'),
 -- Joker
-(7, 5, CURRENT_DATE,       '16:30', 210.00, 'active'),
-(7, 1, CURRENT_DATE + 2,   '20:00', 260.00, 'active');
+(7, 5, CURRENT_DATE,        '16:30', 210.00, 'active'),
+(7, 1, CURRENT_DATE + 2,    '20:00', 260.00, 'active'),
+(7, 4, CURRENT_DATE + 19,   '20:00', 350.00, 'active'),
+(7, 4, CURRENT_DATE + 33,   '09:30', 260.00, 'active'),
+(7, 3, CURRENT_DATE + 46,   '16:00', 200.00, 'active'),
+(7, 5, CURRENT_DATE + 58,   '20:00', 260.00, 'active'),
+-- Oppenheimer
+(8, 2, CURRENT_DATE,        '20:00', 350.00, 'active'),
+(8, 1, CURRENT_DATE + 11,   '12:00', 280.00, 'active'),
+(8, 4, CURRENT_DATE + 21,   '09:30', 280.00, 'active'),
+(8, 1, CURRENT_DATE + 31,   '09:30', 300.00, 'active'),
+(8, 2, CURRENT_DATE + 39,   '09:30', 280.00, 'active'),
+(8, 5, CURRENT_DATE + 49,   '09:30', 300.00, 'active'),
+(8, 3, CURRENT_DATE + 59,   '13:00', 200.00, 'active'),
+-- Spider-Man: No Way Home
+(9, 5, CURRENT_DATE,        '11:00', 220.00, 'active'),
+(9, 2, CURRENT_DATE + 11,   '14:00', 260.00, 'active'),
+(9, 4, CURRENT_DATE + 21,   '21:00', 260.00, 'active'),
+(9, 3, CURRENT_DATE + 30,   '20:00', 350.00, 'active'),
+(9, 1, CURRENT_DATE + 39,   '12:00', 260.00, 'active'),
+(9, 3, CURRENT_DATE + 50,   '15:00', 260.00, 'active'),
+(9, 4, CURRENT_DATE + 60,   '16:00', 240.00, 'active'),
+-- Everything Everywhere All at Once
+(10, 5, CURRENT_DATE + 1,    '13:00', 350.00, 'active'),
+(10, 2, CURRENT_DATE + 13,   '10:00', 220.00, 'active'),
+(10, 1, CURRENT_DATE + 23,   '16:00', 320.00, 'active'),
+(10, 2, CURRENT_DATE + 37,   '11:00', 240.00, 'active'),
+(10, 1, CURRENT_DATE + 47,   '16:00', 260.00, 'active'),
+(10, 3, CURRENT_DATE + 60,   '13:00', 350.00, 'active'),
+-- The Batman
+(11, 4, CURRENT_DATE + 1,    '13:00', 220.00, 'active'),
+(11, 5, CURRENT_DATE + 11,   '09:30', 250.00, 'active'),
+(11, 1, CURRENT_DATE + 19,   '15:00', 300.00, 'active'),
+(11, 4, CURRENT_DATE + 30,   '12:00', 250.00, 'active'),
+(11, 3, CURRENT_DATE + 40,   '16:00', 260.00, 'active'),
+(11, 5, CURRENT_DATE + 49,   '20:00', 200.00, 'active'),
+(11, 2, CURRENT_DATE + 60,   '15:00', 350.00, 'active'),
+-- Top Gun: Maverick
+(12, 2, CURRENT_DATE,        '17:00', 320.00, 'active'),
+(12, 1, CURRENT_DATE + 11,   '19:00', 220.00, 'active'),
+(12, 3, CURRENT_DATE + 25,   '11:00', 260.00, 'active'),
+(12, 5, CURRENT_DATE + 36,   '19:00', 200.00, 'active'),
+(12, 4, CURRENT_DATE + 48,   '21:00', 260.00, 'active'),
+(12, 4, CURRENT_DATE + 59,   '10:00', 260.00, 'active'),
+-- Avatar: The Way of Water
+(13, 2, CURRENT_DATE + 1,    '14:00', 200.00, 'active'),
+(13, 3, CURRENT_DATE + 10,   '19:00', 300.00, 'active'),
+(13, 1, CURRENT_DATE + 19,   '09:30', 350.00, 'active'),
+(13, 5, CURRENT_DATE + 31,   '21:00', 320.00, 'active'),
+(13, 2, CURRENT_DATE + 41,   '14:00', 280.00, 'active'),
+(13, 1, CURRENT_DATE + 50,   '17:00', 220.00, 'active'),
+(13, 3, CURRENT_DATE + 58,   '13:00', 320.00, 'active'),
+-- John Wick: Chapter 4
+(14, 5, CURRENT_DATE,        '19:00', 300.00, 'active'),
+(14, 4, CURRENT_DATE + 13,   '14:00', 350.00, 'active'),
+(14, 4, CURRENT_DATE + 23,   '12:00', 250.00, 'active'),
+(14, 1, CURRENT_DATE + 35,   '20:00', 280.00, 'active'),
+(14, 5, CURRENT_DATE + 48,   '13:00', 320.00, 'active'),
+(14, 2, CURRENT_DATE + 59,   '20:00', 200.00, 'active'),
+-- Barbie
+(15, 3, CURRENT_DATE,        '21:00', 320.00, 'active'),
+(15, 3, CURRENT_DATE + 9,    '13:00', 300.00, 'active'),
+(15, 2, CURRENT_DATE + 19,   '18:00', 350.00, 'active'),
+(15, 5, CURRENT_DATE + 29,   '17:00', 260.00, 'active'),
+(15, 4, CURRENT_DATE + 41,   '11:00', 220.00, 'active'),
+(15, 1, CURRENT_DATE + 50,   '12:00', 320.00, 'active'),
+(15, 4, CURRENT_DATE + 60,   '19:00', 350.00, 'active');
